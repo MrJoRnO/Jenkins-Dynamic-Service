@@ -1,0 +1,22 @@
+- name: Deploy Selected Service
+  hosts: all
+  become: no
+  tasks:
+    - name: Pull the selected service image
+      docker_image:
+        name: "noamjorno/{{ selected_service }}"
+        source: pull
+        tag: latest
+
+    - name: Stop existing container
+      docker_container:
+        name: "{{ selected_service }}-container"
+        state: absent
+
+    - name: Run the selected service
+      docker_container:
+        name: "{{ selected_service }}-container"
+        image: "noamjorno/{{ selected_service }}:latest"
+        state: started
+        ports:
+          - "80:5000"

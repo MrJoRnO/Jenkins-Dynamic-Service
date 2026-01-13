@@ -1,0 +1,45 @@
+pipeline {
+    agent { label 'slave' }
+    
+    parameters {
+        choice(name: 'SERVICE_NAME', choices: ['service1', 'service2'], description: 'Select the service to deploy')
+    }
+
+    environment {
+        DOCKER_HUB_USER = 'noamjorno'
+        IMAGE_NAME = "${params.SERVICE_NAME}"
+        IMAGE_TAG = "1.0.${BUILD_NUMBER}"
+        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
+    }
+    
+    stages {
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_HUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
+            }
+        }
+        
+        stage('Tag and Push to DockerHub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                        sh "docker tag ${DOCKER_HUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest"
+                        sh "docker push ${DOCKER_HUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
+                        sh "docker push ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest"
+                    }
+                }
+            }
+        }
+        
+        stage('Deployment with Ansible') {
+            steps {
+                script {
+                    sh "ansible-playbook -i inventory.ini deploy-playbook.yml -e 'selected_service=${params.SERVICE_NAME}'"
+                }
+            }   
+        }
+    }
+}
