@@ -1,4 +1,4 @@
-# Mission 2: Parametrized Deployment Pipeline
+Parametrized Deployment Pipeline
 
 ## Objective
 This project evolves the initial deployment pipeline into a flexible, user-friendly system. It allows users to select specific services for deployment through Jenkins parameters, enhancing the scalability and adaptability of the CI/CD process.
